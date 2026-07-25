@@ -5,7 +5,7 @@ from typing import Any
 
 from rapidfuzz import fuzz
 
-def pretty_print_dict(dictionary: dict[Any]):
+def pretty_print_dict(dictionary: dict[Any] | list[dict]):
     print(json.dumps(dictionary, indent=4))
 
 class DiscordAnalysis:
@@ -40,17 +40,56 @@ class DiscordAnalysis:
 
         return profanity_map
 
-    def fuzzy_search_messages(self, query: str, threshold: float = 75) -> list[dict]:
+    # def fuzzy_search_messages(self, query: str, threshold: float = 75) -> list[dict]:
+    #     messages = list()
+    #     for idx, message in self.messages.items():
+    #         if fuzz.partial_ratio(query, message.get("content")) >= threshold:
+    #             messages.append(message)
+    #     return messages
+
+    def exact_search_messages(self, query: str) -> list[dict]:
         messages = list()
         for idx, message in self.messages.items():
-            if fuzz.partial_ratio(query, message.get("content")) >= threshold:
+            if message.get("content") == query:
                 messages.append(message)
         return messages
 
+    def fuzzy_match_exact_messages(self, query: str, threshold: float = 75) -> list[dict]:
+        messages = list()
+        for idx, message in self.messages.items():
+            if fuzz.ratio(query, message.get("content")) >= threshold:
+                messages.append(message)
+
+        return messages
+
+    def single_word_fuzzy_search_messages(self, query: str, threshold: float = 75) -> list[dict]:
+        messages = list()
+        for idx, message in self.messages.items():
+            content = message.get("content")
+            for word in content.split():
+                if fuzz.ratio(query, word) >= threshold:
+                    messages.append(message)
+                    break
+        return messages
+
+    def fuzzy_search_messages(self, query: str, threshold: float = 85) -> list[dict]:
+        messages = list()
+        for idx, message in self.messages.items():
+            content = message.get("content")
+
+            if fuzz.partial_ratio(query, content) >= threshold and len(content) > floor(len(query) * 0.8):
+                messages.append(message)
+                print(f"added | {content}")
+
+        return messages
+
+
 
 if __name__ == "__main__":
-    # da = DiscordAnalysis(Path(r"D:\python\discord-scraper\src\data\sussy1287640764192522243.json"))
-    da = DiscordAnalysis(Path(r"D:\python\discord-scraper\src\data\1530222266611404872.json"))
+    da = DiscordAnalysis(Path(r"D:\python\discord-scraper\src\data\sussy1287640764192522243.json"))
+    # da = DiscordAnalysis(Path(r"D:\python\discord-scraper\src\data\1530222266611404872.json"))
     # print(da.get_all_attachments())
     # pretty_print_dict(da.get_profanities())
     # pretty_print_dict(da.fuzzy_search_messages("hello"))
+    # pretty_print_dict(da.fuzzy_search_by_split_messagess("it is"))
+    da.fuzzy_search_messages("can we")
